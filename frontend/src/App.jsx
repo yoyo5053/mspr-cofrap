@@ -3,6 +3,7 @@ import CreateAccount from './pages/CreateAccount'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Renew from './pages/Renew'
+import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Renew />
             </ProtectedRoute>
           } />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
   )
