@@ -52,8 +52,8 @@ La solution met en place une génération automatique des identifiants, une 2FA 
 
 ## Équipe
 
-| Nom | Rôle |
-|---|---|
+| Nom | 
+|---|
 | **Youssef** | 
 | **Cardinal** | 
 | **Elauriche** | 
