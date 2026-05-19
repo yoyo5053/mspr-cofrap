@@ -1,0 +1,33 @@
+title: COFRAP Documentation
+description: Documentation technique de la plateforme d'authentification COFRAP
+remote_theme: just-the-docs/just-the-docs
+
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+
+nav_external_links:
+  - title: Référence API (Swagger)
+    url: api.html
+    hide_icon: false
+
+aux_links:
+  Code source:
+    - https://github.com/
+
+footer_content: 'COFRAP &copy; 2026 · Plateforme d''authentification serverless · <a href="https://github.com/">GitHub</a>'
+
+callouts_level: quiet
+callouts:
+  warning:
+    title: Attention
+    color: yellow
+  danger:
+    title: Critique
+    color: red
+  info:
+    title: Note
+    color: blue
+  success:
+    title: Bonne pratique
+    color: green

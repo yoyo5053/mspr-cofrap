@@ -1,0 +1,279 @@
+openapi: 3.0.3
+info:
+  title: COFRAP Authentication API
+  description: |
+    API d'authentification serverless de la plateforme COFRAP.
+
+    Quatre fonctions OpenFaaS indépendantes implémentent la création de compte,
+    l'authentification TOTP, le renouvellement et la récupération par code de secours.
+
+    **Standards** : RFC 6238 (TOTP), bcrypt, Fernet (AES-128-CBC + HMAC-SHA256).
+  version: "1.0.0"
+  contact:
+    name: Équipe COFRAP
+    email: support@cofrap.fr
+
+servers:
+  - url: http://localhost:8080
+    description: Développement local (Docker Desktop)
+  - url: https://api.cofrap.fr
+    description: Production (exemple)
+
+tags:
+  - name: Inscription
+    description: Création de compte et configuration initiale
+  - name: Authentification
+    description: Connexion et vérification 2FA
+  - name: Récupération
+    description: Renouvellement et recovery par code de secours
+
+paths:
+  /function/generate-password:
+    post:
+      tags: [Inscription]
+      summary: Génère un mot de passe et crée (ou met à jour) l'utilisateur
+      description: |
+        Génère un mot de passe aléatoire de 24 caractères, le hash en bcrypt et le stocke
+        en base. Si l'utilisateur n'existe pas, il est créé. S'il existe, son mot de passe
+        est remplacé (utilisé pour le renouvellement).
+
+        Retourne un QR code (PNG base64) contenant le mot de passe en clair, à scanner
+        avec l'appareil photo ou un gestionnaire de mots de passe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameOnly'
+            example:
+              username: michel.ranu
+      responses:
+        '200':
+          description: Mot de passe généré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QrCodeResponse'
+
+  /function/generate-2fa:
+    post:
+      tags: [Inscription]
+      summary: Génère un secret TOTP et 10 codes de secours
+      description: |
+        Génère un secret TOTP (RFC 6238), le chiffre avec Fernet et le stocke.
+        Génère 10 codes de secours au format `XXXX-XXXX`, les hash avec bcrypt, et les stocke.
+
+        Retourne un QR code (PNG base64) au format `otpauth://` à scanner avec
+        Google Authenticator/Authy, **et** les 10 codes de secours en clair.
+
+        Les codes ne seront **jamais réaffichés** : le frontend doit forcer l'utilisateur
+        à les sauvegarder avant de continuer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameOnly'
+            example:
+              username: michel.ranu
+      responses:
+        '200':
+          description: Secret 2FA et codes de secours générés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Generate2FAResponse'
+
+  /function/authenticate:
+    post:
+      tags: [Authentification]
+      summary: Authentifie un utilisateur avec credentials + TOTP
+      description: |
+        Vérifie : (1) le rate limit (5 échecs/min max), (2) le mot de passe via bcrypt,
+        (3) le code TOTP via pyotp (tolérance ±30 secondes).
+
+        Retourne `expired: true` si les credentials ont plus de 6 mois (rotation forcée).
+        Le frontend doit alors rediriger vers `/renew`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticateRequest'
+            example:
+              username: michel.ranu
+              password: AbCdEf1234xyzPQRSTUVWXYZ
+              totp_code: "847291"
+      responses:
+        '200':
+          description: Réponse d'authentification
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuthenticateSuccess'
+                  - $ref: '#/components/schemas/AuthenticateFailure'
+                  - $ref: '#/components/schemas/RateLimitedResponse'
+              examples:
+                success:
+                  value: { success: true, expired: false, gendate: 1715000000 }
+                expired:
+                  value: { success: true, expired: true, gendate: 1700000000 }
+                invalid:
+                  value: { success: false, error: invalid_credentials }
+                rate_limited:
+                  value:
+                    success: false
+                    error: rate_limited
+                    message: Trop de tentatives. Réessayez dans 1 minute.
+
+  /function/recover-with-backup-code:
+    post:
+      tags: [Récupération]
+      summary: Récupère l'accès à un compte via un code de secours
+      description: |
+        Vérifie qu'un code de secours fourni correspond à un code non utilisé de l'utilisateur.
+
+        Si oui : le code est marqué `used_at = NOW()` (one-shot), un nouveau mot de passe
+        est généré et retourné via QR code. **Le secret 2FA reste inchangé** :
+        l'utilisateur peut se reconnecter immédiatement avec son code TOTP habituel.
+
+        Soumis au même rate limiting que `authenticate` (5 échecs/min par username).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoverRequest'
+            example:
+              username: michel.ranu
+              backup_code: A2B4-C6D8
+      responses:
+        '200':
+          description: Résultat de la récupération
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/RecoverSuccess'
+                  - $ref: '#/components/schemas/RecoverFailure'
+
+components:
+  schemas:
+    UsernameOnly:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          maxLength: 64
+          example: michel.ranu
+
+    QrCodeResponse:
+      type: object
+      properties:
+        qr_code:
+          type: string
+          description: Image PNG encodée en base64
+          example: iVBORw0KGgoAAAANSUhEUg...
+
+    Generate2FAResponse:
+      type: object
+      properties:
+        qr_code:
+          type: string
+          description: PNG base64, contenant l'URI `otpauth://totp/...` pour Google Authenticator
+        backup_codes:
+          type: array
+          description: 10 codes au format XXXX-XXXX. Retournés UNE SEULE FOIS.
+          items:
+            type: string
+            pattern: '^[A-Z2-9]{4}-[A-Z2-9]{4}$'
+          minItems: 10
+          maxItems: 10
+          example:
+            - A2B4-C6D8
+            - E1F3-G5H7
+            - I9J2-K4L6
+            - M8N0-P2Q4
+            - R6S8-T1U3
+            - V5W7-X9Y2
+            - Z4A6-B8C1
+            - D3E5-F7G9
+            - H2I4-J6K8
+            - L1M3-N5P7
+
+    AuthenticateRequest:
+      type: object
+      required: [username, password, totp_code]
+      properties:
+        username:
+          type: string
+          example: michel.ranu
+        password:
+          type: string
+          example: AbCdEf1234xyzPQRSTUVWXYZ
+        totp_code:
+          type: string
+          pattern: '^\d{6}$'
+          example: "847291"
+
+    AuthenticateSuccess:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        expired:
+          type: boolean
+          description: True si les credentials ont plus de 6 mois (rotation forcée)
+          example: false
+        gendate:
+          type: integer
+          description: Timestamp Unix de la dernière génération des credentials
+          example: 1715000000
+
+    AuthenticateFailure:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: string
+          enum: [invalid_credentials, missing_fields, 2fa_not_configured, invalid_json]
+          example: invalid_credentials
+
+    RateLimitedResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: string
+          enum: [rate_limited]
+        message:
+          type: string
+          example: Trop de tentatives. Réessayez dans 1 minute.
+
+    RecoverRequest:
+      type: object
+      required: [username, backup_code]
+      properties:
+        username:
+          type: string
+        backup_code:
+          type: string
+          pattern: '^[A-Z2-9]{4}-[A-Z2-9]{4}$'
+          example: A2B4-C6D8
+
+    RecoverSuccess:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        qr_code:
+          type: string
+          description: QR code du nouveau mot de passe (PNG base64)
+
+    RecoverFailure:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: string
+          enum: [invalid_code, rate_limited, missing_fields, invalid_json]
