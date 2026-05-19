@@ -387,10 +387,11 @@ codes_plain = [generate_backup_code() <span class="k">for</span> _ <span class="
 
 <h4>Implementation : table login_attempts</h4>
 <pre><span class="c"># A chaque tentative d'authentification, AVANT verification du mot de passe</span>
-cur.execute(<span class="s">"""SELECT COUNT(*) FROM login_attempts
-    WHERE username = %s
-      AND success = FALSE
-      AND attempted_at > NOW() - INTERVAL '1 minute'"""</span>, (username,))
+cur.execute(<span class="s">"SELECT COUNT(*) FROM login_attempts "</span>
+            <span class="s">"WHERE username = %s "</span>
+            <span class="s">"  AND success = FALSE "</span>
+            <span class="s">"  AND attempted_at &gt; NOW() - INTERVAL '1 minute'"</span>,
+            (username,))
 failed_count = cur.fetchone()[0]
 
 <span class="k">if</span> failed_count &gt;= 5:
