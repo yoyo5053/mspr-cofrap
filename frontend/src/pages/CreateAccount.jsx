@@ -14,6 +14,7 @@ import QRDisplay from '../components/QRDisplay'
 import ConfirmCheckbox from '../components/ConfirmCheckbox'
 import InfoBox from '../components/InfoBox'
 import Spinner from '../components/Spinner'
+import BackupCodesDisplay from '../components/BackupCodesDisplay'
 import { primaryBtnStyle, backBtnStyle, labelStyle } from '../components/styles'
 
 const FEATURES = [
@@ -61,6 +62,7 @@ const STEP_META = {
     1: { eyebrow: 'Bienvenue',               title: 'Créez votre compte',          subtitle: "Un identifiant unique, un mot de passe sécurisé généré automatiquement." },
     2: { eyebrow: 'Mot de passe',            title: 'Récupérez vos identifiants',  subtitle: "Scannez le QR code à usage unique avec votre appareil photo ou gestionnaire de mots de passe." },
     3: { eyebrow: 'Double authentification', title: 'Activez la 2FA',              subtitle: "Ajoutez une couche de sécurité supplémentaire avec votre application d'authentification." },
+    4: { eyebrow: 'Codes de secours',        title: 'Sauvegardez vos 10 codes',    subtitle: "Ces codes vous permettront de récupérer votre compte si vous perdez votre téléphone. Ils ne seront plus jamais affichés." },
 }
 
 export default function CreateAccount() {
@@ -69,6 +71,7 @@ export default function CreateAccount() {
     const [username, setUsername] = useState('')
     const [passwordQR, setPasswordQR] = useState('')
     const [tfaQR, setTfaQR] = useState('')
+    const [backupCodes, setBackupCodes] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [confirmed, setConfirmed] = useState(false)
@@ -92,6 +95,7 @@ export default function CreateAccount() {
         try {
             const data = await generate2FA(username)
             setTfaQR(data.qr_code)
+            setBackupCodes(data.backup_codes || [])
             setConfirmed(false)
             setStep(3)
         } catch {
@@ -99,8 +103,15 @@ export default function CreateAccount() {
         } finally { setLoading(false) }
     }
 
-    const handleFinish = () => {
+    const goToBackupCodes = () => {
         if (!confirmed) { setError('Veuillez confirmer que vous avez configuré votre application 2FA.'); return }
+        setConfirmed(false)
+        setError('')
+        setStep(4)
+    }
+
+    const handleFinish = () => {
+        if (!confirmed) { setError('Veuillez confirmer que vous avez sauvegardé vos codes de secours.'); return }
         navigate('/login')
     }
 
@@ -116,7 +127,7 @@ export default function CreateAccount() {
     return (
         <AuthLayout marketing={MARKETING}>
 
-            <Stepper steps={['Identifiant', 'Mot de passe', '2FA']} current={step}/>
+            <Stepper steps={['Identifiant', 'Mot de passe', '2FA', 'Secours']} current={step}/>
 
             <StepTransition stepKey={step}>
                 <PageHeading eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle}/>
@@ -225,12 +236,8 @@ export default function CreateAccount() {
                             label="J'ai configuré mon application d'authentification."
                         />
 
-                        <button
-                            onClick={handleFinish}
-                            className="btn btn-primary btn-full"
-                            style={{ ...primaryBtnStyle, background: 'var(--success)', borderColor: 'var(--success)' }}
-                        >
-                            <Check size={15} strokeWidth={2.5}/> Terminer et se connecter
+                        <button onClick={goToBackupCodes} className="btn btn-primary btn-full" style={primaryBtnStyle}>
+                            Continuer <ArrowRight size={15} strokeWidth={2.25}/>
                         </button>
 
                         <button type="button" onClick={back} style={backBtnStyle}
@@ -238,6 +245,32 @@ export default function CreateAccount() {
                             onMouseOut={e => e.currentTarget.style.color = 'var(--text-2)'}
                         >
                             <ChevronLeft size={14}/> Retour
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Step 4 : Backup codes ── */}
+                {step === 4 && (
+                    <div>
+                        <BackupCodesDisplay codes={backupCodes}/>
+
+                        <InfoBox tone="amber" icon={AlertTriangle}>
+                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Conservez ces codes hors-ligne.</strong> Si vous perdez votre téléphone, ils sont le seul moyen de récupérer votre compte sans intervention administrateur. Chaque code n'est utilisable qu'une fois.
+                        </InfoBox>
+
+                        <ConfirmCheckbox
+                            checked={confirmed}
+                            onChange={() => { setConfirmed(!confirmed); setError('') }}
+                            label="J'ai sauvegardé mes codes de secours en lieu sûr."
+                        />
+
+                        <button
+                            onClick={handleFinish}
+                            disabled={!confirmed}
+                            className="btn btn-primary btn-full"
+                            style={{ ...primaryBtnStyle, background: 'var(--success)', borderColor: 'var(--success)' }}
+                        >
+                            <Check size={15} strokeWidth={2.5}/> Terminer et se connecter
                         </button>
                     </div>
                 )}

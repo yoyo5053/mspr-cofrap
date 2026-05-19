@@ -14,6 +14,7 @@ import QRDisplay from '../components/QRDisplay'
 import ConfirmCheckbox from '../components/ConfirmCheckbox'
 import InfoBox from '../components/InfoBox'
 import Spinner from '../components/Spinner'
+import BackupCodesDisplay from '../components/BackupCodesDisplay'
 import { primaryBtnStyle, backBtnStyle } from '../components/styles'
 
 const FEATURES = [
@@ -61,6 +62,7 @@ const STEP_META = {
     1: { eyebrow: 'Renouvellement',       title: 'Renouvelez vos identifiants', subtitle: "Cette opération remplace votre mot de passe et votre code 2FA actuels. Vos données et préférences sont préservées." },
     2: { eyebrow: 'Nouveau mot de passe', title: 'Récupérez vos identifiants',  subtitle: "Scannez ce QR code à usage unique avec votre appareil photo ou gestionnaire de mots de passe." },
     3: { eyebrow: 'Nouveau code 2FA',     title: 'Reconfigurez la 2FA',         subtitle: "Supprimez l'ancien compte dans votre application, puis scannez ce nouveau QR code." },
+    4: { eyebrow: 'Codes de secours',     title: 'Nouveaux codes de secours',   subtitle: "Vos anciens codes sont invalidés. Voici les 10 nouveaux codes, sauvegardez-les dès maintenant." },
 }
 
 export default function Renew() {
@@ -69,6 +71,7 @@ export default function Renew() {
     const [step, setStep] = useState(1)
     const [passwordQR, setPasswordQR] = useState('')
     const [tfaQR, setTfaQR] = useState('')
+    const [backupCodes, setBackupCodes] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [confirmed, setConfirmed] = useState(false)
@@ -98,6 +101,7 @@ export default function Renew() {
         try {
             const data = await generate2FA(username)
             setTfaQR(data.qr_code)
+            setBackupCodes(data.backup_codes || [])
             setConfirmed(false)
             setStep(3)
         } catch {
@@ -105,8 +109,15 @@ export default function Renew() {
         } finally { setLoading(false) }
     }
 
-    const handleFinish = () => {
+    const goToBackupCodes = () => {
         if (!confirmed) { setError('Confirmez que vous avez configuré votre application 2FA.'); return }
+        setConfirmed(false)
+        setError('')
+        setStep(4)
+    }
+
+    const handleFinish = () => {
+        if (!confirmed) { setError('Confirmez que vous avez sauvegardé vos nouveaux codes de secours.'); return }
         sessionStorage.clear()
         navigate('/login')
     }
@@ -123,7 +134,7 @@ export default function Renew() {
     return (
         <AuthLayout marketing={MARKETING}>
 
-            <Stepper steps={['Confirmation', 'Mot de passe', '2FA']} current={step}/>
+            <Stepper steps={['Confirmation', 'Mot de passe', '2FA', 'Secours']} current={step}/>
 
             <StepTransition stepKey={step}>
                 <PageHeading eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle}/>
@@ -250,12 +261,8 @@ export default function Renew() {
                             label="J'ai reconfiguré mon application d'authentification."
                         />
 
-                        <button
-                            onClick={handleFinish}
-                            className="btn btn-primary btn-full"
-                            style={{ ...primaryBtnStyle, background: 'var(--success)', borderColor: 'var(--success)' }}
-                        >
-                            <Check size={15} strokeWidth={2.5}/> Terminer le renouvellement
+                        <button onClick={goToBackupCodes} className="btn btn-primary btn-full" style={primaryBtnStyle}>
+                            Continuer <ArrowRight size={15} strokeWidth={2.25}/>
                         </button>
 
                         <button type="button" onClick={back} style={backBtnStyle}
@@ -263,6 +270,32 @@ export default function Renew() {
                             onMouseOut={e => e.currentTarget.style.color = 'var(--text-2)'}
                         >
                             <ChevronLeft size={14}/> Retour
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Step 4 : New backup codes ── */}
+                {step === 4 && (
+                    <div>
+                        <BackupCodesDisplay codes={backupCodes}/>
+
+                        <InfoBox tone="amber" icon={AlertTriangle}>
+                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Vos anciens codes sont désormais invalidés.</strong> Conservez ces nouveaux codes hors-ligne, ils ne seront plus jamais affichés.
+                        </InfoBox>
+
+                        <ConfirmCheckbox
+                            checked={confirmed}
+                            onChange={() => { setConfirmed(!confirmed); setError('') }}
+                            label="J'ai sauvegardé mes nouveaux codes de secours."
+                        />
+
+                        <button
+                            onClick={handleFinish}
+                            disabled={!confirmed}
+                            className="btn btn-primary btn-full"
+                            style={{ ...primaryBtnStyle, background: 'var(--success)', borderColor: 'var(--success)' }}
+                        >
+                            <Check size={15} strokeWidth={2.5}/> Terminer le renouvellement
                         </button>
                     </div>
                 )}
