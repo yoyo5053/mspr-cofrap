@@ -134,7 +134,16 @@ export default function Login() {
                             </div>
 
                             <div>
-                                <label className="label" style={labelStyle}>Mot de passe</label>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px' }}>
+                                    <label className="label" style={{ ...labelStyle, marginBottom: 0 }}>Mot de passe</label>
+                                    <Link to="/recover" style={{
+                                        fontSize: '12px', color: 'var(--accent)',
+                                        textDecoration: 'none', fontWeight: '500',
+                                        letterSpacing: '-0.005em',
+                                    }}>
+                                        Mot de passe oublié ?
+                                    </Link>
+                                </div>
                                 <div style={{ position: 'relative' }}>
                                     <input
                                         className="input"

@@ -29,3 +29,13 @@ export const authenticate = async (username, password, totpCode) => {
     if (!response.ok) throw new Error('Erreur authenticate')
     return response.json()
 }
+
+export const recoverWithBackupCode = async (username, backupCode) => {
+    const response = await fetch(`${GATEWAY_URL}/function/recover-with-backup-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, backup_code: backupCode })
+    })
+    if (!response.ok) throw new Error('Erreur recover-with-backup-code')
+    return response.json()
+}
