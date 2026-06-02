@@ -30,8 +30,8 @@ def authenticate(payload: AuthenticateIn):
     if "error" in res:
         raise HTTPException(status_code=400, detail=res["error"])
     if "expired" in res and res["expired"]:
-        return {"success": False, "gendate": None}
-    return {"success": True, "gendate": res.get("gendate")}
+        return {"success": False, "expired": True, "gendate": None}
+    return {"success": True, "expired": False, "gendate": res.get("gendate")}
 
 
 @router.post("/recover-with-backup-code", response_model=QROut)

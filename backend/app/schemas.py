@@ -32,4 +32,5 @@ class Generate2FAOut(BaseModel):
 
 class AuthenticateOut(BaseModel):
     success: bool
+    expired: Optional[bool] = False
     gendate: Optional[int]

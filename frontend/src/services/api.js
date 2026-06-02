@@ -1,4 +1,4 @@
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8080'
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000'
 
 export const generatePassword = async (username) => {
     const response = await fetch(`${GATEWAY_URL}/function/generate-password`, {
