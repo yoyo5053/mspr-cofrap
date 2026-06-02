@@ -1,5 +1,6 @@
 import io
 import base64
+import logging
 import secrets
 import string
 from datetime import datetime, timedelta
@@ -13,6 +14,8 @@ from sqlalchemy import select, insert, update, and_, func
 from app.core.config import ENCRYPTION_KEY, ISSUER
 from app.db.session import engine
 from app.models import tables
+
+logger = logging.getLogger("cofrap.auth")
 
 
 def _b64_png_from_text(text: str) -> str:
@@ -35,7 +38,7 @@ def generate_password_for_user(username: str) -> str:
     now = datetime.utcnow()
     with engine.connect() as conn:
         # upsert
-        res = conn.execute(select([tables.users.c.username]).where(tables.users.c.username == username))
+        res = conn.execute(select(tables.users.c.username).where(tables.users.c.username == username))
         row = res.first()
         if row:
             conn.execute(
@@ -43,10 +46,12 @@ def generate_password_for_user(username: str) -> str:
                 .where(tables.users.c.username == username)
                 .values(password_hash=pwd_hash, gendate=now)
             )
+            logger.info("Password regenerated for existing user=%s", username)
         else:
             conn.execute(
                 insert(tables.users).values(username=username, password_hash=pwd_hash, gendate=now)
             )
+            logger.info("Password generated for new user=%s", username)
     return pwd
 
 
@@ -59,6 +64,7 @@ def generate_password_qr(username: str) -> str:
 def generate_2fa(username: str):
     secret = pyotp.random_base32()
     if not ENCRYPTION_KEY:
+        logger.error("ENCRYPTION_KEY not set when generating 2FA for username=%s", username)
         raise RuntimeError("ENCRYPTION_KEY not set")
     f = Fernet(ENCRYPTION_KEY.encode())
     enc = f.encrypt(secret.encode())
@@ -67,16 +73,18 @@ def generate_2fa(username: str):
 
     # insert/update totp encrypted
     with engine.connect() as conn:
-        res = conn.execute(select([tables.users.c.username]).where(tables.users.c.username == username))
+        res = conn.execute(select(tables.users.c.username).where(tables.users.c.username == username))
         row = res.first()
         if row:
             conn.execute(
                 update(tables.users).where(tables.users.c.username == username).values(totp_encrypted=enc)
             )
+            logger.info("2FA secret updated for existing user=%s", username)
         else:
             conn.execute(
                 insert(tables.users).values(username=username, password_hash=b"", totp_encrypted=enc)
             )
+            logger.info("2FA secret created for new user=%s", username)
 
         # generate 10 backup codes
         codes = []
@@ -88,6 +96,7 @@ def generate_2fa(username: str):
             conn.execute(
                 insert(tables.backup_codes).values(username=username, code_hash=hashed)
             )
+        logger.info("Generated %d backup codes for username=%s", len(codes), username)
 
     return qr, codes
 
@@ -97,56 +106,66 @@ def _record_login_attempt(conn, username: str, success: bool):
 
 
 def authenticate(username: str, password: str, totp_code: str = None):
+    logger.info("Authenticate attempt for username=%s", username)
     now = datetime.utcnow()
     with engine.connect() as conn:
         # rate limit: failures in last minute
         one_min = now - timedelta(minutes=1)
-        q = select([func.count()]).select_from(tables.login_attempts).where(
+        q = select(func.count()).select_from(tables.login_attempts).where(
             and_(tables.login_attempts.c.username == username, tables.login_attempts.c.success == False, tables.login_attempts.c.attempted_at >= one_min)
         )
         res = conn.execute(q)
         fail_count = res.scalar() or 0
         if fail_count >= 5:
+            logger.warning("Authenticate rate-limited for username=%s", username)
             return {"error": "rate_limited"}
 
         # fetch user
-        res = conn.execute(select([tables.users]).where(tables.users.c.username == username))
+        res = conn.execute(select(tables.users).where(tables.users.c.username == username))
         user = res.first()
         if not user:
             _record_login_attempt(conn, username, False)
+            logger.warning("Authenticate invalid credentials for username=%s", username)
             return {"error": "invalid_credentials"}
 
         stored_hash = user.password_hash
         if not stored_hash:
             _record_login_attempt(conn, username, False)
+            logger.warning("Authenticate missing password hash for username=%s", username)
             return {"error": "invalid_credentials"}
 
         if not bcrypt.checkpw(password.encode(), stored_hash):
             _record_login_attempt(conn, username, False)
+            logger.warning("Authenticate invalid credentials for username=%s", username)
             return {"error": "invalid_credentials"}
 
         # check gendate expiry
         gendate = user.gendate
         if gendate and (now - gendate).days > 30 * 6:
             _record_login_attempt(conn, username, False)
+            logger.info("Authenticate expired credentials for username=%s", username)
             return {"expired": True}
 
         # check totp
         if user.totp_encrypted:
             if not totp_code:
                 _record_login_attempt(conn, username, False)
+                logger.warning("Authenticate totp required for username=%s", username)
                 return {"error": "totp_required"}
             if not ENCRYPTION_KEY:
+                logger.error("ENCRYPTION_KEY not set during authenticate for username=%s", username)
                 raise RuntimeError("ENCRYPTION_KEY not set")
             f = Fernet(ENCRYPTION_KEY.encode())
             secret = f.decrypt(user.totp_encrypted).decode()
             totp = pyotp.TOTP(secret)
             if not totp.verify(totp_code, valid_window=1):
                 _record_login_attempt(conn, username, False)
+                logger.warning("Authenticate invalid totp for username=%s", username)
                 return {"error": "invalid_totp"}
 
         _record_login_attempt(conn, username, True)
         gendate_ts = int(gendate.timestamp()) if gendate else None
+        logger.info("Authenticate success for username=%s", username)
         return {"success": True, "gendate": gendate_ts}
 
 
@@ -154,7 +173,7 @@ def recover_with_backup_code(username: str, backup_code: str):
     # normalize
     code = backup_code.strip()
     with engine.connect() as conn:
-        res = conn.execute(select([tables.backup_codes]).where(and_(tables.backup_codes.c.username == username, tables.backup_codes.c.used_at == None)))
+        res = conn.execute(select(tables.backup_codes).where(and_(tables.backup_codes.c.username == username, tables.backup_codes.c.used_at == None)))
         rows = res.fetchall()
         matched = None
         for r in rows:

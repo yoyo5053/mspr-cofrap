@@ -1,41 +1,39 @@
+import { logInfo, logWarn, logError } from './logger'
+
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000'
 
-export const generatePassword = async (username) => {
-    const response = await fetch(`${GATEWAY_URL}/function/generate-password`, {
+async function fetchWithLogging(endpoint, body, actionName) {
+    const url = `${GATEWAY_URL}${endpoint}`
+    logInfo(`${actionName} start`, { url, body })
+    const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
+        body: JSON.stringify(body),
     })
-    if (!response.ok) throw new Error('Erreur generate-password')
-    return response.json()
+
+    if (!response.ok) {
+        const text = await response.text()
+        logError(`${actionName} failed`, { status: response.status, statusText: response.statusText, body: text })
+        throw new Error(`${actionName} erreur ${response.status}`)
+    }
+
+    const data = await response.json()
+    logInfo(`${actionName} success`, { url, data })
+    return data
+}
+
+export const generatePassword = async (username) => {
+    return fetchWithLogging('/function/generate-password', { username }, 'generatePassword')
 }
 
 export const generate2FA = async (username) => {
-    const response = await fetch(`${GATEWAY_URL}/function/generate-2fa`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-    })
-    if (!response.ok) throw new Error('Erreur generate-2fa')
-    return response.json()
+    return fetchWithLogging('/function/generate-2fa', { username }, 'generate2FA')
 }
 
 export const authenticate = async (username, password, totpCode) => {
-    const response = await fetch(`${GATEWAY_URL}/function/authenticate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, totp_code: totpCode })
-    })
-    if (!response.ok) throw new Error('Erreur authenticate')
-    return response.json()
+    return fetchWithLogging('/function/authenticate', { username, password, totp_code: totpCode }, 'authenticate')
 }
 
 export const recoverWithBackupCode = async (username, backupCode) => {
-    const response = await fetch(`${GATEWAY_URL}/function/recover-with-backup-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, backup_code: backupCode })
-    })
-    if (!response.ok) throw new Error('Erreur recover-with-backup-code')
-    return response.json()
+    return fetchWithLogging('/function/recover-with-backup-code', { username, backup_code: backupCode }, 'recoverWithBackupCode')
 }
