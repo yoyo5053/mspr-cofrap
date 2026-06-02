@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+
+# mypy
+.mypy_cache/
+
+# IDEs
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# env files (use .env.example committed instead)
+.env
+.env.*
+
+# Docker
+docker-compose.override.yml
+
+# SQLite
+*.sqlite3
+
+# Logs
+.log
+
+# Alembic versions will be committed; keep them in repo
