@@ -6,7 +6,7 @@ provider:
 
 functions:
   generate-password:
-    lang: python3
+    lang: python3-http
     handler: ./functions/generate-password
     image: elaurichenickson/cofrap-generate-password:latest
     environment:
@@ -17,7 +17,7 @@ functions:
       - .env.secrets
 
   generate-2fa:
-    lang: python3
+    lang: python3-http
     handler: ./functions/generate-2fa
     image: elaurichenickson/cofrap-generate-2fa:latest
     environment:
@@ -28,7 +28,7 @@ functions:
       - .env.secrets
 
   authenticate:
-    lang: python3
+    lang: python3-http
     handler: ./functions/authenticate
     image: elaurichenickson/cofrap-authenticate:latest
     environment:
@@ -39,7 +39,7 @@ functions:
       - .env.secrets
 
   recover-with-backup-code:
-    lang: python3
+    lang: python3-http
     handler: ./functions/recover-with-backup-code
     image: elaurichenickson/cofrap-recover-with-backup-code:latest
     environment:

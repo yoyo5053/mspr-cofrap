@@ -84,3 +84,4 @@ async def health():
 def startup():
     metadata.create_all(bind=engine)
     logger.info("Startup complete: database metadata created.")
+ 
