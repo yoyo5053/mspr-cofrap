@@ -8,7 +8,7 @@ functions:
   generate-password:
     lang: python3
     handler: ./functions/generate-password
-    image: cofrap/generate-password:latest
+    image: elaurichenickson/cofrap-generate-password:latest
     environment:
       DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
     secrets:
@@ -19,7 +19,7 @@ functions:
   generate-2fa:
     lang: python3
     handler: ./functions/generate-2fa
-    image: cofrap/generate-2fa:latest
+    image: elaurichenickson/cofrap-generate-2fa:latest
     environment:
       DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
     secrets:
@@ -30,7 +30,7 @@ functions:
   authenticate:
     lang: python3
     handler: ./functions/authenticate
-    image: cofrap/authenticate:latest
+    image: elaurichenickson/cofrap-authenticate:latest
     environment:
       DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
     secrets:
@@ -41,7 +41,7 @@ functions:
   recover-with-backup-code:
     lang: python3
     handler: ./functions/recover-with-backup-code
-    image: cofrap/recover-with-backup-code:latest
+    image: elaurichenickson/cofrap-recover-with-backup-code:latest
     environment:
       DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
     secrets:
