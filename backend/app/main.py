@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,16 +16,29 @@ logger = logging.getLogger("cofrap")
 
 app = FastAPI(title="Auth Service")
 
+# CORS configuration for Kubernetes deployments
+CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://frontend:80",
+    "http://frontend.cofrap.svc.cluster.local:80",
+]
+
+# Add environment-based CORS origins
+if os.getenv("VITE_GATEWAY_URL"):
+    CORS_ORIGINS.append(os.getenv("VITE_GATEWAY_URL"))
+
+# Allow all origins in development
+if os.getenv("ENV") == "development":
+    CORS_ORIGINS = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +65,19 @@ async def log_requests(request: Request, call_next):
     return response
 
 app.include_router(router, prefix="/function")
+
+
+@app.get("/health")
+async def health():
+    """Health check endpoint for Kubernetes."""
+    try:
+        # Test database connectivity
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+        return {"status": "healthy", "database": "ok"}
+    except Exception as e:
+        logger.error("Health check failed: %s", str(e))
+        raise
 
 
 @app.on_event("startup")

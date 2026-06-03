@@ -84,19 +84,15 @@ export default function Recover() {
         setLoading(true); setError('')
         try {
             const data = await recoverWithBackupCode(username, backupCode)
-            if (!data.success) {
-                if (data.error === 'rate_limited') {
-                    setError(data.message || 'Trop de tentatives, réessayez dans 1 minute.')
-                } else {
-                    setError('Code de secours invalide ou utilisateur inconnu.')
-                }
+            if (!data.qr_code) {
+                setError('Code de secours invalide ou utilisateur inconnu.')
                 return
             }
             setPasswordQR(data.qr_code)
             setConfirmed(false)
             setStep(2)
-        } catch {
-            setError('Une erreur est survenue. Réessayez.')
+        } catch (error) {
+            setError('Code de secours invalide ou utilisateur inconnu.')
         } finally { setLoading(false) }
     }
 
