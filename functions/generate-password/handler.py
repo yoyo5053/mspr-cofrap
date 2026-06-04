@@ -41,7 +41,7 @@ def handle(event, context):
 
         pwd = _generate_password()
         pwd_hash = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt(rounds=12))
-        now = datetime.utcnow()
+        now = int(datetime.utcnow().timestamp())
 
         with engine.begin() as conn:
             res = conn.execute(select(users.c.username).where(users.c.username == username))

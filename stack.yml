@@ -10,7 +10,7 @@ functions:
     handler: ./functions/generate-password
     image: elaurichenickson/cofrap-generate-password:latest
     environment:
-      DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
+      DATABASE_URL: "postgresql://cofrap:cofrap@postgres.cofrap.svc.cluster.local:5432/cofrap"
     secrets:
       - encryption-key
 
@@ -19,7 +19,7 @@ functions:
     handler: ./functions/generate-2fa
     image: elaurichenickson/cofrap-generate-2fa:latest
     environment:
-      DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
+      DATABASE_URL: "postgresql://cofrap:cofrap@postgres.cofrap.svc.cluster.local:5432/cofrap"
     secrets:
       - encryption-key
 
@@ -28,7 +28,7 @@ functions:
     handler: ./functions/authenticate
     image: elaurichenickson/cofrap-authenticate:latest
     environment:
-      DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
+      DATABASE_URL: "postgresql://cofrap:cofrap@postgres.cofrap.svc.cluster.local:5432/cofrap"
     secrets:
       - encryption-key
 
@@ -37,7 +37,7 @@ functions:
     handler: ./functions/recover-with-backup-code
     image: elaurichenickson/cofrap-recover-with-backup-code:latest
     environment:
-      DATABASE_URL: "postgresql://cofrap:cofrap@postgres:5432/cofrap"
+      DATABASE_URL: "postgresql://cofrap:cofrap@postgres.cofrap.svc.cluster.local:5432/cofrap"
     secrets:
       - encryption-key
 

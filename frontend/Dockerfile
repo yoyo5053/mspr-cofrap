@@ -8,7 +8,10 @@ RUN npm install
 
 COPY . .
 
-ENV VITE_GATEWAY_URL=http://localhost:8000
+ARG VITE_GATEWAY_URL
+
+#ENV VITE_GATEWAY_URL=http://localhost:8000
+ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 
 RUN npm run build
 
