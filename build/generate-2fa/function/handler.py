@@ -48,7 +48,16 @@ def _generate_backup_codes(conn, username):
     return codes
 
 
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+}
+
 def handle(event, context):
+    if hasattr(event, 'method') and event.method == "OPTIONS":
+        return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
     try:
         body = json.loads(event.body) if event.body else {}
         username = body.get("username")

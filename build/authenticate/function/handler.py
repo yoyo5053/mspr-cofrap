@@ -27,7 +27,16 @@ login_attempts = Table("login_attempts", metadata,
 )
 
 
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+}
+
 def handle(event, context):
+    if hasattr(event, 'method') and event.method == "OPTIONS":
+        return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
     try:
         body = json.loads(event.body) if event.body else {}
         username = body.get("username")
@@ -37,7 +46,7 @@ def handle(event, context):
         if not username or not password:
             return {"statusCode": 400, "body": json.dumps({"error": "username and password required"})}
 
-        now = datetime.utcnow()
+        now = int(datetime.utcnow().timestamp())
 
         with engine.begin() as conn:
             # Rate limit check
