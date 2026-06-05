@@ -415,8 +415,8 @@ export default function Dashboard() {
                         />
                         <SecurityRow
                             icon={Smartphone}
-                            label="2FA activée"
-                            sublabel="TOTP, rotation 30s"
+                            label="Sécurité par code activée"
+                            sublabel="Code mobile, rotation 30s"
                             status="active"
                         />
                         <SecurityRow

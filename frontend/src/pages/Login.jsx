@@ -21,8 +21,8 @@ const FEATURES = [
     },
     {
         icon: Smartphone,
-        title: 'Double authentification',
-        desc: 'Protection TOTP obligatoire avec rotation automatique des credentials tous les 6 mois.',
+        title: 'Connexion par code',
+        desc: 'Protection par code obligatoire avec rotation automatique des identifiants tous les 6 mois.',
     },
     {
         icon: Zap,
@@ -45,7 +45,7 @@ const MARKETING = {
             </span>
         </>
     ),
-    subtitle: "Authentification multi-facteurs, chiffrement de bout en bout et architecture serverless, pensés pour les exigences des entreprises modernes.",
+    subtitle: "Connexion par code de sécurité, chiffrement de bout en bout et architecture serverless, pensés pour les exigences des entreprises modernes.",
     features: FEATURES,
     stats: [
         { value: '99.99%', label: 'Disponibilité SLA' },
@@ -82,7 +82,7 @@ export default function Login() {
             if (data.expired) { navigate('/renew'); return }
             navigate('/dashboard')
         } catch {
-            setError('Identifiants incorrects ou code 2FA invalide.')
+            setError('Identifiants incorrects ou code invalide.')
         } finally { setLoading(false) }
     }
 
@@ -91,7 +91,7 @@ export default function Login() {
     return (
         <AuthLayout marketing={MARKETING}>
 
-            <Stepper steps={['Identifiants', 'Vérification 2FA']} current={step}/>
+            <Stepper steps={['Identifiants', 'Vérification du code']} current={step}/> 
 
             <StepTransition stepKey={step}>
                 <PageHeading
@@ -99,7 +99,7 @@ export default function Login() {
                     title={step === 1 ? 'Connectez-vous à votre compte' : 'Vérifiez votre identité'}
                     subtitle={step === 1
                         ? "Accédez à votre espace sécurisé COFRAP avec vos identifiants professionnels."
-                        : <>Saisissez le code à 6 chiffres généré par votre application d'authentification pour <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>{username}</strong>.</>}
+                        : <>Saisissez le code à 6 chiffres généré par votre application de sécurité pour <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>{username}</strong>.</>}
                 />
 
                 {error && (
@@ -190,7 +190,7 @@ export default function Login() {
                 {step === 2 && (
                     <form onSubmit={handleLogin}>
                         <div style={{ marginBottom: '24px' }}>
-                            <label className="label" style={labelStyle}>Code d'authentification</label>
+                            <label className="label" style={labelStyle}>Code de sécurité</label>
                             <input
                                 className="input"
                                 type="text"
@@ -212,7 +212,7 @@ export default function Login() {
                                 marginTop: '10px', fontSize: '12.5px',
                                 color: 'var(--text-2)', textAlign: 'center', lineHeight: '1.55',
                             }}>
-                                Ouvrez Google Authenticator, code renouvelé toutes les 30 secondes.
+                                Ouvrez votre application de sécurité, code renouvelé toutes les 30 secondes.
                             </p>
                         </div>
 

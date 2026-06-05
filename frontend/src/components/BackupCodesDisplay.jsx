@@ -14,8 +14,8 @@ export default function BackupCodesDisplay({ codes }) {
             '',
             'IMPORTANT',
             '- Chaque code ne fonctionne qu une seule fois.',
-            '- Conservez ces codes en lieu sur (gestionnaire de mots de passe, coffre-fort).',
-            '- En cas de perte du telephone 2FA, utilisez un code pour reinitialiser votre mot de passe.',
+            '- Conservez ces codes en lieu sûr (gestionnaire de mots de passe, coffre-fort).',
+            '- En cas de perte de votre application de sécurité, utilisez un code pour réinitialiser votre mot de passe.',
             '',
         ].join('\n')
     }
@@ -58,7 +58,7 @@ export default function BackupCodesDisplay({ codes }) {
 <h1>COFRAP - Codes de secours</h1>
 <p class="sub">Generes le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
 <div class="grid">${codes.map(c => `<div class="code">${c}</div>`).join('')}</div>
-<p class="note"><strong>Important :</strong> chaque code ne fonctionne qu une seule fois. Conservez-les hors-ligne. En cas de perte du telephone 2FA, un code permet de reinitialiser votre mot de passe.</p>
+<p class="note"><strong>Important :</strong> chaque code ne fonctionne qu une seule fois. Conservez-les hors-ligne. En cas de perte de votre application de sécurité, un code permet de réinitialiser votre mot de passe.</p>
 </body></html>`
         win.document.write(html)
         win.document.close()

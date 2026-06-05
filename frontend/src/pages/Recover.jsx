@@ -29,8 +29,8 @@ const FEATURES = [
     },
     {
         icon: ShieldCheck,
-        title: '2FA préservée',
-        desc: "Votre configuration Google Authenticator reste valide, vous n'avez rien à reconfigurer côté téléphone.",
+        title: 'Sécurité préservée',
+        desc: "Votre configuration d'application reste valide, vous n'avez rien à reconfigurer côté téléphone.",
     },
 ]
 
@@ -53,7 +53,7 @@ const MARKETING = {
     stats: [
         { value: '1 code',  label: 'Suffit à récupérer' },
         { value: '24 car.', label: 'Nouveau mot de passe' },
-        { value: '0',       label: 'Reconfiguration 2FA' },
+        { value: '0',       label: 'Pas de reconfiguration nécessaire' },
     ],
 }
 
@@ -175,7 +175,7 @@ export default function Recover() {
                         </div>
 
                         <InfoBox tone="amber" icon={AlertTriangle}>
-                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Le code utilisé sera brûlé.</strong> Il ne fonctionnera plus après cette opération. Votre 2FA reste inchangée.
+                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Le code utilisé sera brûlé.</strong> Il ne fonctionnera plus après cette opération. Votre code de sécurité reste inchangé.
                         </InfoBox>
 
                         <button type="submit" disabled={loading} className="btn btn-primary btn-full" style={primaryBtnStyle}>
@@ -207,7 +207,7 @@ export default function Recover() {
                         />
 
                         <InfoBox tone="blue">
-                            Votre nouveau mot de passe est généré. Pour vous reconnecter, utilisez ce mot de passe <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>+ votre code 2FA habituel</strong>. Aucune reconfiguration nécessaire côté téléphone.
+                            Votre nouveau mot de passe est généré. Pour vous reconnecter, utilisez ce mot de passe <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>+ votre code de sécurité habituel</strong>. Aucune reconfiguration nécessaire côté téléphone.
                         </InfoBox>
 
                         <ConfirmCheckbox

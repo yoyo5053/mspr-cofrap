@@ -21,7 +21,7 @@ const FEATURES = [
     {
         icon: RefreshCw,
         title: 'Rotation guidée',
-        desc: 'Renouvellement en trois étapes : un nouveau mot de passe et un nouveau secret 2FA sont générés.',
+        desc: 'Renouvellement en trois étapes : un nouveau mot de passe et un nouveau code de sécurité sont générés.',
     },
     {
         icon: KeyRound,
@@ -59,9 +59,9 @@ const MARKETING = {
 }
 
 const STEP_META = {
-    1: { eyebrow: 'Renouvellement',       title: 'Renouvelez vos identifiants', subtitle: "Cette opération remplace votre mot de passe et votre code 2FA actuels. Vos données et préférences sont préservées." },
+    1: { eyebrow: 'Renouvellement',       title: 'Renouvelez vos identifiants', subtitle: "Cette opération remplace votre mot de passe et votre code de sécurité actuels. Vos données et préférences sont préservées." },
     2: { eyebrow: 'Nouveau mot de passe', title: 'Récupérez vos identifiants',  subtitle: "Scannez ce QR code à usage unique avec votre appareil photo ou gestionnaire de mots de passe." },
-    3: { eyebrow: 'Nouveau code 2FA',     title: 'Reconfigurez la 2FA',         subtitle: "Supprimez l'ancien compte dans votre application, puis scannez ce nouveau QR code." },
+    3: { eyebrow: 'Nouveau code de sécurité', title: 'Reconfigurez votre code de sécurité', subtitle: "Supprimez l'ancien compte dans votre application, puis scannez ce nouveau QR code." },
     4: { eyebrow: 'Codes de secours',     title: 'Nouveaux codes de secours',   subtitle: "Vos anciens codes sont invalidés. Voici les 10 nouveaux codes, sauvegardez-les dès maintenant." },
 }
 
@@ -105,12 +105,12 @@ export default function Renew() {
             setConfirmed(false)
             setStep(3)
         } catch {
-            setError('Erreur lors de la génération du nouveau secret 2FA.')
+            setError('Erreur lors de la génération du nouveau code de sécurité.')
         } finally { setLoading(false) }
     }
 
     const goToBackupCodes = () => {
-        if (!confirmed) { setError('Confirmez que vous avez configuré votre application 2FA.'); return }
+        if (!confirmed) { setError('Confirmez que vous avez configuré votre application de sécurité.'); return }
         setConfirmed(false)
         setError('')
         setStep(4)
@@ -134,7 +134,7 @@ export default function Renew() {
     return (
         <AuthLayout marketing={MARKETING}>
 
-            <Stepper steps={['Confirmation', 'Mot de passe', '2FA', 'Secours']} current={step}/>
+            <Stepper steps={['Confirmation', 'Mot de passe', 'Code de sécurité', 'Secours']} current={step}/> 
 
             <StepTransition stepKey={step}>
                 <PageHeading eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle}/>
@@ -183,7 +183,7 @@ export default function Renew() {
                         </div>
 
                         <InfoBox tone="amber" icon={AlertTriangle}>
-                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Cette action est irréversible.</strong> Votre ancien mot de passe et votre ancien code 2FA seront immédiatement invalidés.
+                            <strong style={{ color: 'var(--text-1)', fontWeight: '600' }}>Cette action est irréversible.</strong> Votre ancien mot de passe et votre ancien code de sécurité seront immédiatement invalidés.
                         </InfoBox>
 
                         <ConfirmCheckbox
@@ -228,8 +228,8 @@ export default function Renew() {
 
                         <button onClick={handleGenerate2FA} disabled={loading} className="btn btn-primary btn-full" style={primaryBtnStyle}>
                             {loading
-                                ? <><Spinner/> Génération 2FA...</>
-                                : <>Continuer vers la 2FA <ArrowRight size={15} strokeWidth={2.25}/></>
+                                ? <><Spinner/> Génération du code de sécurité...</>
+                                : <>Continuer vers le code de sécurité <ArrowRight size={15} strokeWidth={2.25}/></>
                             }
                         </button>
 
@@ -242,13 +242,13 @@ export default function Renew() {
                     </div>
                 )}
 
-                {/* ── Step 3 : new 2FA QR ── */}
+                {/* ── Step 3 : new security code QR ── */}
                 {step === 3 && (
                     <div>
                         <QRDisplay
                             src={tfaQR}
-                            alt="QR code nouveau 2FA"
-                            warning="Supprimez l'ancien code 2FA avant de scanner le nouveau."
+                            alt="QR code nouveau code de sécurité"
+                            warning="Supprimez l'ancien code de sécurité avant de scanner le nouveau."
                         />
 
                         <InfoBox tone="blue">
