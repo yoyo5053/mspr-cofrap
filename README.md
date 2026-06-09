@@ -1,6 +1,6 @@
 # COFRAP — Plateforme d'Authentification Sécurisée
 
-> MSPR Bloc 2 — RNCP35584 | EPSI 2025/2026
+> MSPR Bloc 2
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python)
