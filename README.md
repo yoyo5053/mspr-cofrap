@@ -53,12 +53,7 @@ The solution enforces automatic credential generation, mandatory 2FA via QR code
 
 ## Team
 
-| Name | Role |
-|---|---|
-| **Youssef Taib** | Project management |
-| **Cardinal** | Backend development |
-| **Elariche** | Infrastructure |
-| **Faouz** | Backend & frontend development |
+| **Youssef Taib** | **Cardinal** |  **Elariche** |  **Faouz** | 
 
 ---
 
