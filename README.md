@@ -51,11 +51,5 @@ The solution enforces automatic credential generation, mandatory 2FA via QR code
 
 ---
 
-## Team
-
-| **Youssef Taib** | **Cardinal** |  **Elariche** |  **Faouz** | 
-
----
-
 > COFRAP · Solutions logicielles, performance durable.  
 > EPSI 2025/2026
