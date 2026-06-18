@@ -1,13 +1,13 @@
 ---
 layout: default
-title: Déploiement
+title: Deployment
 nav_order: 6
 ---
 
-# Démarrage et déploiement local
+# Local Setup and Deployment
 {: .no_toc }
 
-## Sommaire
+## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
@@ -15,57 +15,57 @@ nav_order: 6
 
 ---
 
-Procédure complète pour lancer la stack en local : base de données PostgreSQL, fonctions OpenFaaS, frontend React. Suppose une installation préalable de Docker Desktop, faas-cli et Node.js 18+.
+Full procedure to run the stack locally: PostgreSQL database, OpenFaaS functions, React frontend. Assumes Docker Desktop, faas-cli, and Node.js 18+ are already installed.
 
-## Prérequis
+## Prerequisites
 
-| Outil | Version | Installation |
+| Tool | Version | Install |
 |:------|:--------|:-------------|
-| Docker Desktop | dernière | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
-| Kubernetes (intégré à Docker Desktop, K3S ou minikube) | 1.28+ | activable dans Docker Desktop > Settings > Kubernetes |
-| `faas-cli` | 0.16+ | `choco install faas-cli` (Windows) ou `brew install faas-cli` (macOS) |
+| Docker Desktop | latest | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
+| Kubernetes (built into Docker Desktop, K3S, or minikube) | 1.28+ | enable in Docker Desktop > Settings > Kubernetes |
+| `faas-cli` | 0.16+ | `choco install faas-cli` (Windows) or `brew install faas-cli` (macOS) |
 | Node.js | 18+ | [nodejs.org](https://nodejs.org/) |
-| Python | 3.11+ | pour générer la clé Fernet |
-| `psql` (PostgreSQL client) | 14+ | inclus avec PostgreSQL |
+| Python | 3.11+ | needed to generate the Fernet key |
+| `psql` (PostgreSQL client) | 14+ | bundled with PostgreSQL |
 
-## Étape 1 — Générer la clé Fernet
+## Step 1 — Generate the Fernet key
 
 ```bash
 python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
-# Exemple de sortie:
+# Example output:
 # GqJ4Y6dM9vQ8XzN3Hk7Pa2sBcRfTwUyL5jE0iVoWnZE=
 ```
 
 {: .danger }
-Cette clé est **critique** : sa perte rend tous les secrets 2FA en base irrécupérables. Stockez-la dans un gestionnaire de secrets (Vault, 1Password, AWS Secrets Manager) **avant** de continuer.
+This key is **critical**: losing it makes all 2FA secrets in the database unrecoverable. Store it in a secrets manager (Vault, 1Password, AWS Secrets Manager) **before** continuing.
 
-## Étape 2 — Démarrer PostgreSQL
+## Step 2 — Start PostgreSQL
 
 ```bash
 docker compose up -d postgres
 ```
 
-Cela démarre PostgreSQL sur le port 5432 avec :
-- User : `cofrap`
-- Mot de passe : `cofrap`
-- Base : `cofrap`
+This starts PostgreSQL on port 5432 with:
+- User: `cofrap`
+- Password: `cofrap`
+- Database: `cofrap`
 
-## Étape 3 — Initialiser le schéma
+## Step 3 — Initialize the schema
 
 ```bash
 psql -h localhost -U cofrap -d cofrap -f init.sql
 ```
 
-Cela crée les trois tables : `users`, `backup_codes`, `login_attempts` avec leurs index.
+This creates the three tables: `users`, `backup_codes`, `login_attempts`, along with their indexes.
 
-Vérification :
+Verify:
 ```bash
 psql -h localhost -U cofrap -d cofrap -c "\dt"
-# Doit afficher 3 tables
+# Should show 3 tables
 ```
 
-## Étape 4 — Créer les secrets OpenFaaS
+## Step 4 — Create the OpenFaaS secrets
 
 ```bash
 faas-cli secret create cofrap-encryption-key \
@@ -75,24 +75,24 @@ faas-cli secret create cofrap-db-url \
     --from-literal="postgres://cofrap:cofrap@postgres:5432/cofrap"
 ```
 
-## Étape 5 — Build et déploiement des fonctions
+## Step 5 — Build and deploy the functions
 
-Depuis la racine du projet :
+From the project root:
 
 ```bash
 faas-cli up -f stack.yml
 
-# Cela exécute en séquence:
-# - faas-cli build (crée les 4 images Docker)
-# - faas-cli push (optionnel, pour cluster distant)
-# - faas-cli deploy (déploie sur OpenFaaS)
+# This runs in sequence:
+# - faas-cli build (creates the 4 Docker images)
+# - faas-cli push (optional, for a remote cluster)
+# - faas-cli deploy (deploys to OpenFaaS)
 ```
 
-Vérifier que les fonctions sont déployées :
+Verify the functions are deployed:
 
 ```bash
 faas-cli list
-# Doit lister:
+# Should list:
 # Function                      Invocations    Replicas
 # generate-password             0              1
 # generate-2fa                  0              1
@@ -100,91 +100,91 @@ faas-cli list
 # recover-with-backup-code      0              1
 ```
 
-## Étape 6 — Démarrer le frontend
+## Step 6 — Start the frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev
 
-# Le frontend est disponible sur http://localhost:5173 (ou 5174 si le port est occupé)
+# The frontend is available at http://localhost:5173 (or 5174 if the port is busy)
 ```
 
-## Étape 7 — Vérification
+## Step 7 — Verification
 
-1. Ouvrir [http://localhost:5174](http://localhost:5174)
-2. Cliquer **"Créer un accès"** → entrer un username de test
-3. Scanner les deux QR codes successivement (mot de passe + 2FA)
-4. Sauvegarder les 10 codes de secours (copier ou télécharger)
-5. Se connecter avec le mot de passe scanné + le code TOTP de l'app
-6. Vérifier l'apparition du Dashboard avec le statut **"Sécurisé"**
+1. Open [http://localhost:5174](http://localhost:5174)
+2. Click **"Create an account"** → enter a test username
+3. Scan the two QR codes in sequence (password + 2FA)
+4. Save the 10 backup codes (copy or download)
+5. Log in with the scanned password + the TOTP code from the app
+6. Confirm the Dashboard appears with the status **"Secured"**
 
-## Tests manuels recommandés
+## Recommended manual tests
 
 ### Rate limiting
 
-1. Entrer un mauvais mot de passe 5 fois → vérifier le message "Trop de tentatives"
-2. Attendre 1 minute → réessayer avec le bon mot de passe → succès
+1. Enter a wrong password 5 times → confirm the "Too many attempts" message appears
+2. Wait 1 minute → retry with the correct password → success
 
-### Récupération par code de secours
+### Recovery via backup code
 
-1. Se connecter une fois normalement
-2. Se déconnecter
-3. Cliquer **"Mot de passe oublié ?"** sur Login
-4. Entrer username + un des 10 codes de secours
-5. Vérifier qu'un nouveau QR mot de passe est affiché
-6. Vérifier que le code utilisé ne fonctionne plus (essayer une 2e fois → erreur)
-7. Se reconnecter avec le nouveau mot de passe + le même code 2FA qu'avant
+1. Log in normally once
+2. Log out
+3. Click **"Forgot password?"** on Login
+4. Enter username + one of the 10 backup codes
+5. Confirm a new password QR code is shown
+6. Confirm the used code no longer works (try a second time → error)
+7. Log back in with the new password + the same 2FA code as before
 
-### Renouvellement forcé
+### Forced renewal
 
-Pour simuler une expiration :
+To simulate an expiration:
 
 ```sql
--- Forcer gendate à 7 mois dans le passé
+-- Force gendate to 7 months in the past
 UPDATE users SET gendate = EXTRACT(EPOCH FROM NOW() - INTERVAL '7 months')::BIGINT
-WHERE username = 'votre_test_user';
+WHERE username = 'your_test_user';
 ```
 
-Puis se connecter → redirection automatique vers `/renew`.
+Then log in → automatic redirect to `/renew`.
 
-## Debug et logs
+## Debugging and logs
 
-### Logs OpenFaaS
+### OpenFaaS logs
 
 ```bash
-# Logs en temps réel d'une fonction
+# Real-time logs for a function
 faas-cli logs generate-password --follow
 
-# Logs des dernières N lignes
+# Logs for the last N lines
 faas-cli logs authenticate --tail 100
 ```
 
-### Logs PostgreSQL
+### PostgreSQL logs
 
 ```bash
 docker logs -f mspr-cofrap-postgres-1
 ```
 
-### Erreurs courantes
+### Common errors
 
-| Symptôme | Cause probable | Solution |
+| Symptom | Likely cause | Fix |
 |:---------|:---------------|:---------|
-| 500 sur `generate-2fa` | `ENCRYPTION_KEY` manquante ou invalide | Vérifier `faas-cli secret list` |
-| 500 sur toutes les fonctions | `DATABASE_URL` invalide ou base inaccessible | Vérifier que PostgreSQL tourne, vérifier le secret |
-| Build OpenFaaS échoue | Module Python manquant | Vérifier `requirements.txt` de la fonction |
-| Port 5432 déjà occupé | Autre PostgreSQL local | Stopper l'instance locale ou changer le port dans `docker-compose.yml` |
-| Frontend ne charge pas les QR | CORS ou gateway URL incorrecte | Vérifier `VITE_GATEWAY_URL` dans `.env` |
+| 500 on `generate-2fa` | `ENCRYPTION_KEY` missing or invalid | Check `faas-cli secret list` |
+| 500 on every function | `DATABASE_URL` invalid or database unreachable | Confirm PostgreSQL is running, check the secret |
+| OpenFaaS build fails | Missing Python module | Check the function's `requirements.txt` |
+| Port 5432 already in use | Another local PostgreSQL instance | Stop the local instance or change the port in `docker-compose.yml` |
+| Frontend doesn't load QR codes | CORS or wrong gateway URL | Check `VITE_GATEWAY_URL` in `.env` |
 
-## Déploiement en production
+## Production deployment
 
-Pour un déploiement production, voir aussi [Sécurité — Recommandations production](security.html#recommandations-pour-la-production).
+For a production deployment, also see [Security — Production recommendations](security.html#production-recommendations).
 
-Points obligatoires avant mise en prod :
+Mandatory points before going to production:
 
-- TLS sur la passerelle OpenFaaS (cert-manager + Let's Encrypt)
-- Clé Fernet en HSM ou KMS géré
-- Rate limit IP au niveau de la passerelle
-- Backups chiffrés PostgreSQL avec rotation
-- Monitoring : alertes sur `login_attempts` avec `success=FALSE` en pic
-- Audit RBAC Kubernetes : qui peut lire les secrets ?
+- TLS on the OpenFaaS gateway (cert-manager + Let's Encrypt)
+- Fernet key in an HSM or managed KMS
+- IP-based rate limiting at the gateway level
+- Encrypted PostgreSQL backups with rotation
+- Monitoring: alerts on spikes in `login_attempts` with `success=FALSE`
+- Kubernetes RBAC audit: who can read the secrets?

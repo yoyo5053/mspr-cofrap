@@ -2,43 +2,43 @@ openapi: 3.0.3
 info:
   title: COFRAP Authentication API
   description: |
-    API d'authentification serverless de la plateforme COFRAP.
+    Serverless authentication API for the COFRAP platform.
 
-    Quatre fonctions OpenFaaS indépendantes implémentent la création de compte,
-    l'authentification TOTP, le renouvellement et la récupération par code de secours.
+    Four independent OpenFaaS functions implement account creation,
+    TOTP authentication, renewal, and recovery via backup code.
 
-    **Standards** : RFC 6238 (TOTP), bcrypt, Fernet (AES-128-CBC + HMAC-SHA256).
+    **Standards**: RFC 6238 (TOTP), bcrypt, Fernet (AES-128-CBC + HMAC-SHA256).
   version: "1.0.0"
   contact:
-    name: Équipe COFRAP
+    name: COFRAP Team
     email: support@cofrap.fr
 
 servers:
   - url: http://localhost:8080
-    description: Développement local (Docker Desktop)
+    description: Local development (Docker Desktop)
   - url: https://api.cofrap.fr
-    description: Production (exemple)
+    description: Production (example)
 
 tags:
-  - name: Inscription
-    description: Création de compte et configuration initiale
-  - name: Authentification
-    description: Connexion et vérification 2FA
-  - name: Récupération
-    description: Renouvellement et recovery par code de secours
+  - name: Registration
+    description: Account creation and initial setup
+  - name: Authentication
+    description: Login and 2FA verification
+  - name: Recovery
+    description: Renewal and recovery via backup code
 
 paths:
   /function/generate-password:
     post:
-      tags: [Inscription]
-      summary: Génère un mot de passe et crée (ou met à jour) l'utilisateur
+      tags: [Registration]
+      summary: Generates a password and creates (or updates) the user
       description: |
-        Génère un mot de passe aléatoire de 24 caractères, le hash en bcrypt et le stocke
-        en base. Si l'utilisateur n'existe pas, il est créé. S'il existe, son mot de passe
-        est remplacé (utilisé pour le renouvellement).
+        Generates a random 24-character password, hashes it with bcrypt, and stores it
+        in the database. If the user doesn't exist, it is created. If it exists, its
+        password is replaced (used for renewal).
 
-        Retourne un QR code (PNG base64) contenant le mot de passe en clair, à scanner
-        avec l'appareil photo ou un gestionnaire de mots de passe.
+        Returns a QR code (base64 PNG) containing the plaintext password, to be scanned
+        with a camera or a password manager.
       requestBody:
         required: true
         content:
@@ -49,7 +49,7 @@ paths:
               username: michel.ranu
       responses:
         '200':
-          description: Mot de passe généré
+          description: Password generated
           content:
             application/json:
               schema:
@@ -57,17 +57,17 @@ paths:
 
   /function/generate-2fa:
     post:
-      tags: [Inscription]
-      summary: Génère un secret TOTP et 10 codes de secours
+      tags: [Registration]
+      summary: Generates a TOTP secret and 10 backup codes
       description: |
-        Génère un secret TOTP (RFC 6238), le chiffre avec Fernet et le stocke.
-        Génère 10 codes de secours au format `XXXX-XXXX`, les hash avec bcrypt, et les stocke.
+        Generates a TOTP secret (RFC 6238), encrypts it with Fernet, and stores it.
+        Generates 10 backup codes in the `XXXX-XXXX` format, hashes them with bcrypt, and stores them.
 
-        Retourne un QR code (PNG base64) au format `otpauth://` à scanner avec
-        Google Authenticator/Authy, **et** les 10 codes de secours en clair.
+        Returns a QR code (base64 PNG) in `otpauth://` format to be scanned with
+        Google Authenticator/Authy, **and** the 10 plaintext backup codes.
 
-        Les codes ne seront **jamais réaffichés** : le frontend doit forcer l'utilisateur
-        à les sauvegarder avant de continuer.
+        The codes will **never be shown again**: the frontend must force the user
+        to save them before continuing.
       requestBody:
         required: true
         content:
@@ -78,7 +78,7 @@ paths:
               username: michel.ranu
       responses:
         '200':
-          description: Secret 2FA et codes de secours générés
+          description: 2FA secret and backup codes generated
           content:
             application/json:
               schema:
@@ -86,14 +86,14 @@ paths:
 
   /function/authenticate:
     post:
-      tags: [Authentification]
-      summary: Authentifie un utilisateur avec credentials + TOTP
+      tags: [Authentication]
+      summary: Authenticates a user with credentials + TOTP
       description: |
-        Vérifie : (1) le rate limit (5 échecs/min max), (2) le mot de passe via bcrypt,
-        (3) le code TOTP via pyotp (tolérance ±30 secondes).
+        Verifies: (1) the rate limit (max 5 failures/min), (2) the password via bcrypt,
+        (3) the TOTP code via pyotp (±30 second tolerance).
 
-        Retourne `expired: true` si les credentials ont plus de 6 mois (rotation forcée).
-        Le frontend doit alors rediriger vers `/renew`.
+        Returns `expired: true` if the credentials are more than 6 months old (forced rotation).
+        The frontend must then redirect to `/renew`.
       requestBody:
         required: true
         content:
@@ -106,7 +106,7 @@ paths:
               totp_code: "847291"
       responses:
         '200':
-          description: Réponse d'authentification
+          description: Authentication response
           content:
             application/json:
               schema:
@@ -125,20 +125,20 @@ paths:
                   value:
                     success: false
                     error: rate_limited
-                    message: Trop de tentatives. Réessayez dans 1 minute.
+                    message: Too many attempts. Try again in 1 minute.
 
   /function/recover-with-backup-code:
     post:
-      tags: [Récupération]
-      summary: Récupère l'accès à un compte via un code de secours
+      tags: [Recovery]
+      summary: Recovers access to an account via a backup code
       description: |
-        Vérifie qu'un code de secours fourni correspond à un code non utilisé de l'utilisateur.
+        Verifies that a submitted backup code matches an unused code belonging to the user.
 
-        Si oui : le code est marqué `used_at = NOW()` (one-shot), un nouveau mot de passe
-        est généré et retourné via QR code. **Le secret 2FA reste inchangé** :
-        l'utilisateur peut se reconnecter immédiatement avec son code TOTP habituel.
+        If it matches: the code is marked `used_at = NOW()` (one-shot), a new password
+        is generated and returned via QR code. **The 2FA secret stays unchanged**:
+        the user can log back in immediately with their usual TOTP code.
 
-        Soumis au même rate limiting que `authenticate` (5 échecs/min par username).
+        Subject to the same rate limiting as `authenticate` (5 failures/min per username).
       requestBody:
         required: true
         content:
@@ -150,7 +150,7 @@ paths:
               backup_code: A2B4-C6D8
       responses:
         '200':
-          description: Résultat de la récupération
+          description: Recovery result
           content:
             application/json:
               schema:
@@ -174,7 +174,7 @@ components:
       properties:
         qr_code:
           type: string
-          description: Image PNG encodée en base64
+          description: PNG image encoded in base64
           example: iVBORw0KGgoAAAANSUhEUg...
 
     Generate2FAResponse:
@@ -182,10 +182,10 @@ components:
       properties:
         qr_code:
           type: string
-          description: PNG base64, contenant l'URI `otpauth://totp/...` pour Google Authenticator
+          description: Base64 PNG, containing the `otpauth://totp/...` URI for Google Authenticator
         backup_codes:
           type: array
-          description: 10 codes au format XXXX-XXXX. Retournés UNE SEULE FOIS.
+          description: 10 codes in the XXXX-XXXX format. Returned ONLY ONCE.
           items:
             type: string
             pattern: '^[A-Z2-9]{4}-[A-Z2-9]{4}$'
@@ -224,11 +224,11 @@ components:
         success: { type: boolean, example: true }
         expired:
           type: boolean
-          description: True si les credentials ont plus de 6 mois (rotation forcée)
+          description: True if the credentials are more than 6 months old (forced rotation)
           example: false
         gendate:
           type: integer
-          description: Timestamp Unix de la dernière génération des credentials
+          description: Unix timestamp of the last credentials generation
           example: 1715000000
 
     AuthenticateFailure:
@@ -249,7 +249,7 @@ components:
           enum: [rate_limited]
         message:
           type: string
-          example: Trop de tentatives. Réessayez dans 1 minute.
+          example: Too many attempts. Try again in 1 minute.
 
     RecoverRequest:
       type: object
@@ -268,7 +268,7 @@ components:
         success: { type: boolean, example: true }
         qr_code:
           type: string
-          description: QR code du nouveau mot de passe (PNG base64)
+          description: QR code of the new password (base64 PNG)
 
     RecoverFailure:
       type: object

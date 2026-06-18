@@ -1,58 +1,58 @@
 ---
 layout: default
-title: Accueil
+title: Home
 nav_order: 1
-description: Documentation technique de la plateforme COFRAP
+description: Technical documentation for the COFRAP platform
 permalink: /
 ---
 
-# COFRAP — Documentation technique
+# COFRAP — Technical Documentation
 {: .fs-9 }
 
-Plateforme d'authentification serverless avec génération automatique de mot de passe, double authentification TOTP et rotation forcée tous les six mois.
+Serverless authentication platform with automatic password generation, TOTP two-factor authentication, and forced rotation every six months.
 {: .fs-6 .fw-300 }
 
-[Démarrage rapide](deploy.html){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[Référence API](api.html){: .btn .fs-5 .mb-4 .mb-md-0 }
+[Quick Start](deploy.html){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[API Reference](api.html){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
 
-## Vue d'ensemble
+## Overview
 
-COFRAP est une plateforme d'authentification d'entreprise reposant sur quatre fonctions OpenFaaS indépendantes, une base PostgreSQL et un frontend React. Le système combine **TOTP** (Time-based One-Time Password, RFC 6238) avec trois défenses additionnelles : chiffrement Fernet du secret 2FA, codes de secours one-shot, et rate limiting des tentatives de connexion.
+COFRAP is an enterprise authentication platform built on four independent OpenFaaS functions, a PostgreSQL database, and a React frontend. The system combines **TOTP** (Time-based One-Time Password, RFC 6238) with three additional defenses: Fernet encryption of the 2FA secret, one-shot backup codes, and rate limiting on login attempts.
 
 ## Sections
 
 ### [Architecture](architecture.html)
-Vue d'ensemble du système : composants, dépendances, flux de données entre le frontend, les fonctions OpenFaaS et la base PostgreSQL.
+System overview: components, dependencies, and data flow between the frontend, OpenFaaS functions, and PostgreSQL database.
 
-### [Double authentification (TOTP)](2fa.html)
-Fonctionnement détaillé du protocole TOTP : génération du secret, calcul du code à 6 chiffres, vérification serveur.
+### [Two-Factor Authentication (TOTP)](2fa.html)
+Detailed walkthrough of the TOTP protocol: secret generation, 6-digit code computation, server-side verification.
 
-### [Sécurité enterprise-grade](security.html)
-Les trois défenses additionnelles qui transforment un TOTP classique en solution audit-ready.
+### [Enterprise-Grade Security](security.html)
+The three additional defenses that turn a basic TOTP setup into an audit-ready solution.
 
-### [Référence API](api.html)
-Documentation interactive des quatre endpoints OpenFaaS (Swagger UI).
+### [API Reference](api.html)
+Interactive documentation for the four OpenFaaS endpoints (Swagger UI).
 
-### [Déploiement local](deploy.html)
-Procédure pas à pas pour démarrer la stack complète sur un poste de développement.
+### [Local Deployment](deploy.html)
+Step-by-step procedure to start the full stack on a development machine.
 
 ---
 
-## Pour qui est cette documentation ?
+## Who is this documentation for?
 
-- **Équipe backend** : implémentation des fonctions OpenFaaS, schéma de base de données, gestion des secrets.
-- **Équipe frontend** : intégration des endpoints, gestion de la session, parcours utilisateur.
-- **Équipe DevOps / SRE** : déploiement Kubernetes, configuration des secrets, monitoring.
-- **Auditeurs de sécurité** : revue des choix cryptographiques, des mécanismes de protection et des limites connues.
+- **Backend team**: implementing OpenFaaS functions, the database schema, secrets management.
+- **Frontend team**: integrating endpoints, session management, user flows.
+- **DevOps / SRE team**: Kubernetes deployment, secrets configuration, monitoring.
+- **Security auditors**: review of cryptographic choices, protection mechanisms, and known limitations.
 
-## Stack technique
+## Tech Stack
 
-| Couche | Technologie |
+| Layer | Technology |
 |:-------|:------------|
 | Frontend | React 18, Vite, React Router, lucide-react |
 | Backend | Python 3.11, OpenFaaS Community |
-| Cryptographie | `cryptography` (Fernet), `bcrypt`, `pyotp` |
-| Base de données | PostgreSQL 16 |
+| Cryptography | `cryptography` (Fernet), `bcrypt`, `pyotp` |
+| Database | PostgreSQL 16 |
 | Infrastructure | Kubernetes K3S, Helm, faas-cli |

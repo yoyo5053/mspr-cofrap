@@ -4,10 +4,10 @@ title: API Reference
 nav_order: 5
 ---
 
-# Référence API
+# API Reference
 {: .no_toc }
 
-## Sommaire
+## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
@@ -15,13 +15,13 @@ nav_order: 5
 
 ---
 
-L'application expose **quatre fonctions OpenFaaS** indépendantes. Chaque fonction accepte un POST avec un body JSON et retourne du JSON.
+The application exposes **four independent OpenFaaS functions**. Each function accepts a POST request with a JSON body and returns JSON.
 
-[Documentation interactive Swagger UI](api.html){: .btn .btn-primary }
+[Interactive Swagger UI documentation](api.html){: .btn .btn-primary }
 
 ## Endpoints
 
-| Fonction | Endpoint | Body | Réponse |
+| Function | Endpoint | Body | Response |
 |:---------|:---------|:-----|:--------|
 | `generate-password` | `POST /function/generate-password` | `{username}` | `{qr_code}` |
 | `generate-2fa` | `POST /function/generate-2fa` | `{username}` | `{qr_code, backup_codes[10]}` |
@@ -30,9 +30,9 @@ L'application expose **quatre fonctions OpenFaaS** indépendantes. Chaque foncti
 
 ## generate-password
 
-Génère un mot de passe aléatoire de 24 caractères, le hash en bcrypt et le stocke. Crée l'utilisateur si nécessaire (renew si existant). Retourne un QR code contenant le mot de passe en clair.
+Generates a random 24-character password, hashes it with bcrypt, and stores it. Creates the user if needed (renews if already existing). Returns a QR code containing the plaintext password.
 
-**Requête**
+**Request**
 ```http
 POST /function/generate-password
 Content-Type: application/json
@@ -40,18 +40,18 @@ Content-Type: application/json
 { "username": "michel.ranu" }
 ```
 
-**Réponse 200**
+**Response 200**
 ```json
 { "qr_code": "iVBORw0KGgoAAAANSU..." }
 ```
 
-Le `qr_code` est une chaîne base64 d'une image PNG. Affichage frontend : `<img src="data:image/png;base64,${qr_code}"/>`.
+`qr_code` is a base64 string of a PNG image. Frontend display: `<img src="data:image/png;base64,${qr_code}"/>`.
 
 ## generate-2fa
 
-Génère un secret TOTP, le chiffre avec Fernet, le stocke. Génère 10 codes de secours, les hash avec bcrypt, les stocke. Retourne un QR code TOTP et les 10 codes en clair (à usage unique : retournés une fois, jamais relus).
+Generates a TOTP secret, encrypts it with Fernet, and stores it. Generates 10 backup codes, hashes them with bcrypt, and stores them. Returns a TOTP QR code and the 10 plaintext codes (one-time use: returned once, never shown again).
 
-**Requête**
+**Request**
 ```http
 POST /function/generate-2fa
 Content-Type: application/json
@@ -59,7 +59,7 @@ Content-Type: application/json
 { "username": "michel.ranu" }
 ```
 
-**Réponse 200**
+**Response 200**
 ```json
 {
   "qr_code": "iVBORw0KGgoAAAANSU...",
@@ -72,13 +72,13 @@ Content-Type: application/json
 ```
 
 {: .warning }
-Les `backup_codes` ne seront jamais réaffichés. Le frontend doit forcer l'utilisateur à les sauvegarder (copier, télécharger ou imprimer) avant de continuer.
+The `backup_codes` will never be shown again. The frontend must force the user to save them (copy, download, or print) before continuing.
 
 ## authenticate
 
-Vérifie credentials + TOTP avec rate limiting. Retourne le statut d'expiration des credentials (rotation 6 mois).
+Verifies credentials + TOTP with rate limiting. Returns the credentials' expiration status (6-month rotation).
 
-**Requête**
+**Request**
 ```http
 POST /function/authenticate
 Content-Type: application/json
@@ -90,7 +90,7 @@ Content-Type: application/json
 }
 ```
 
-**Réponse 200 (succès)**
+**Response 200 (success)**
 ```json
 {
   "success": true,
@@ -99,25 +99,25 @@ Content-Type: application/json
 }
 ```
 
-**Réponse 200 (échec)**
+**Response 200 (failure)**
 ```json
 { "success": false, "error": "invalid_credentials" }
 ```
 
-**Réponse 200 (rate limit)**
+**Response 200 (rate limited)**
 ```json
 {
   "success": false,
   "error": "rate_limited",
-  "message": "Trop de tentatives. Réessayez dans 1 minute."
+  "message": "Too many attempts. Try again in 1 minute."
 }
 ```
 
 ## recover-with-backup-code
 
-Vérifie un code de secours, le marque comme utilisé, génère un nouveau mot de passe. Le secret 2FA reste inchangé : l'utilisateur peut se reconnecter immédiatement avec le nouveau mot de passe + son code TOTP habituel.
+Verifies a backup code, marks it as used, and generates a new password. The 2FA secret stays unchanged: the user can log back in immediately with the new password + their usual TOTP code.
 
-**Requête**
+**Request**
 ```http
 POST /function/recover-with-backup-code
 Content-Type: application/json
@@ -128,7 +128,7 @@ Content-Type: application/json
 }
 ```
 
-**Réponse 200 (succès)**
+**Response 200 (success)**
 ```json
 {
   "success": true,
@@ -136,41 +136,41 @@ Content-Type: application/json
 }
 ```
 
-**Réponse 200 (échec)**
+**Response 200 (failure)**
 ```json
 { "success": false, "error": "invalid_code" }
 ```
 
-## Codes d'erreur normalisés
+## Standard error codes
 
-| Code | Signification | Action UI |
+| Code | Meaning | UI action |
 |:-----|:--------------|:----------|
-| `missing_fields` | Un champ obligatoire est vide | Afficher "Veuillez remplir tous les champs" |
-| `invalid_credentials` | Username, password ou TOTP invalide | Message générique pour ne pas révéler quel champ est faux |
-| `rate_limited` | Plus de 5 échecs dans la dernière minute | Afficher le délai d'attente, désactiver le formulaire |
-| `invalid_code` | Code de secours inconnu ou déjà utilisé | Inviter à essayer un autre code |
-| `2fa_not_configured` | L'utilisateur n'a pas finalisé sa configuration 2FA | Rediriger vers `/create-account` ou contacter support |
-| `user_not_found` | Username inexistant pour `generate-2fa` | Erreur générique côté frontend |
-| `invalid_json` | Body mal formé | Erreur générique côté frontend |
+| `missing_fields` | A required field is empty | Show "Please fill in all fields" |
+| `invalid_credentials` | Invalid username, password, or TOTP | Generic message to avoid revealing which field is wrong |
+| `rate_limited` | More than 5 failures in the last minute | Show the wait time, disable the form |
+| `invalid_code` | Unknown or already-used backup code | Prompt the user to try another code |
+| `2fa_not_configured` | The user hasn't completed their 2FA setup | Redirect to `/create-account` or contact support |
+| `user_not_found` | Username doesn't exist for `generate-2fa` | Generic error on the frontend |
+| `invalid_json` | Malformed body | Generic error on the frontend |
 
-## Considérations transverses
+## Cross-cutting considerations
 
-### Format des QR codes
+### QR code format
 
-Tous les `qr_code` retournés sont des **chaînes base64** représentant des images PNG. Le frontend les affiche directement via `data:image/png;base64,...`.
+All returned `qr_code` values are **base64 strings** representing PNG images. The frontend displays them directly via `data:image/png;base64,...`.
 
-Pour le 2FA, le contenu encodé est un URI `otpauth://totp/COFRAP:{username}?secret=...&issuer=COFRAP` que les applications type Google Authenticator savent parser nativement.
+For 2FA, the encoded content is an `otpauth://totp/COFRAP:{username}?secret=...&issuer=COFRAP` URI, which apps like Google Authenticator can parse natively.
 
-### Idempotence
+### Idempotency
 
-`generate-password` est idempotent : appeler la fonction plusieurs fois pour le même username régénère simplement le mot de passe (utilisé aussi pour le renouvellement).
+`generate-password` is idempotent: calling the function multiple times for the same username simply regenerates the password (also used for renewal).
 
-`generate-2fa` est idempotent : régénère le secret 2FA et les 10 codes de secours. Les anciens codes sont supprimés.
+`generate-2fa` is idempotent: it regenerates the 2FA secret and the 10 backup codes. The old codes are deleted.
 
-`authenticate` et `recover-with-backup-code` ne sont **pas** idempotents : chaque appel enregistre une tentative et peut déclencher le rate limiting.
+`authenticate` and `recover-with-backup-code` are **not** idempotent: each call logs an attempt and can trigger rate limiting.
 
 ### Headers
 
-Aucune fonction ne nécessite d'header particulier en dehors de `Content-Type: application/json`. La passerelle OpenFaaS gère le routing.
+No function requires any special header besides `Content-Type: application/json`. The OpenFaaS gateway handles routing.
 
-En production, la passerelle devra activer TLS et éventuellement un header `Authorization` si les fonctions sont accessibles directement (sinon, accès via frontend uniquement).
+In production, the gateway should enable TLS and possibly an `Authorization` header if the functions are accessible directly (otherwise, access is frontend-only).

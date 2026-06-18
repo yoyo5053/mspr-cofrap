@@ -1,13 +1,13 @@
 ---
 layout: default
-title: TOTP en détail
+title: TOTP in detail
 nav_order: 3
 ---
 
-# La double authentification (TOTP)
+# Two-Factor Authentication (TOTP)
 {: .no_toc }
 
-## Sommaire
+## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
@@ -15,20 +15,20 @@ nav_order: 3
 
 ---
 
-## Vue d'ensemble
+## Overview
 
-TOTP signifie **Time-based One-Time Password**. C'est l'algorithme standardisé par la [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) et utilisé par Google Authenticator, Authy, 1Password et la grande majorité des applications d'authentification.
+TOTP stands for **Time-based One-Time Password**. It's the algorithm standardized by [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) and used by Google Authenticator, Authy, 1Password, and the vast majority of authenticator apps.
 
-Sa force tient en un mot : **le temps remplace la communication**. Une fois le secret partagé à l'inscription, le client et le serveur peuvent calculer le même code indépendamment, sans communiquer.
+Its strength can be summed up in one idea: **time replaces communication**. Once the secret is shared at registration, the client and server can independently compute the same code without communicating.
 
-## Le principe en trois étapes
+## The principle in three steps
 
-### Étape A — Inscription (une seule fois)
+### Step A — Registration (one time only)
 
 ```
-Serveur:
-  secret = random_bytes(20)                          # 160 bits aléatoires
-  db.users.save(secret_2fa = encrypt(secret))        # chiffré Fernet
+Server:
+  secret = random_bytes(20)                          # 160 random bits
+  db.users.save(secret_2fa = encrypt(secret))        # Fernet-encrypted
   qr_url = "otpauth://totp/COFRAP:michel
            ?secret=BASE32...&issuer=COFRAP"
   return qr_code(qr_url)
@@ -38,27 +38,27 @@ Client (Google Authenticator):
   store { label: "COFRAP", secret: "BASE32..." }
 ```
 
-Le secret est partagé **une seule fois** via le QR. À partir de là, le client et le serveur peuvent calculer les mêmes codes indépendamment.
+The secret is shared **only once** via the QR code. From that point on, the client and server can independently compute the same codes.
 
-### Étape B — Calcul du code (toutes les 30 secondes)
+### Step B — Code computation (every 30 seconds)
 
 ```
-T = floor(timestamp_unix / 30)         # numéro de période 30s
-hash = HMAC-SHA1(secret, T)            # 20 octets
-offset = hash[19] AND 0x0f             # 4 derniers bits
+T = floor(timestamp_unix / 30)         # 30s period number
+hash = HMAC-SHA1(secret, T)            # 20 bytes
+offset = hash[19] AND 0x0f             # last 4 bits
 truncated = hash[offset..offset+4] AND 0x7fffffff
-code = truncated MOD 1_000_000         # 6 chiffres
+code = truncated MOD 1_000_000         # 6 digits
 ```
 
-Les deux parties (le serveur et l'app du téléphone) exécutent ce calcul **indépendamment**, en utilisant la même entrée (le secret partagé et l'heure UTC). Si les deux horloges sont synchrones à 30 secondes près, ils obtiennent le même code.
+Both parties (the server and the phone app) run this computation **independently**, using the same inputs (the shared secret and UTC time). If both clocks are in sync within 30 seconds, they get the same code.
 
-### Étape C — Authentification
+### Step C — Authentication
 
 ```python
-# Le client envoie:
+# The client sends:
 { "username": "michel", "password": "...", "totp_code": "847291" }
 
-# Le serveur:
+# The server:
 user = db.find(username)
 if not bcrypt.verify(user.password_hash, password):
     return 401
@@ -71,63 +71,63 @@ if totp_code != expected:
 return success
 ```
 
-## Pourquoi ça fonctionne
+## Why it works
 
-- **Le temps fait office de canal de synchronisation gratuit.** Pas besoin de connexion permanente entre l'app et le serveur.
-- **Les codes ont une durée de vie très courte.** Même intercepté, un code est inutilisable après 30 secondes (60 secondes maximum avec la tolérance `valid_window=1` utilisée dans `authenticate`).
-- **Le secret ne voyage qu'une seule fois.** Après le scan initial, il reste côté serveur (chiffré) et côté app (dans le stockage sécurisé du téléphone). Aucune transmission ultérieure.
+- **Time acts as a free synchronization channel.** No need for a persistent connection between the app and the server.
+- **Codes have a very short lifespan.** Even if intercepted, a code is unusable after 30 seconds (60 seconds max with the `valid_window=1` tolerance used in `authenticate`).
+- **The secret only travels once.** After the initial scan, it stays server-side (encrypted) and app-side (in the phone's secure storage). No further transmission.
 
-## Implémentation côté serveur
+## Server-side implementation
 
-La bibliothèque [`pyotp`](https://pyauth.github.io/pyotp/) fournit une implémentation conforme RFC 6238.
+The [`pyotp`](https://pyauth.github.io/pyotp/) library provides an RFC 6238-compliant implementation.
 
 ```python
 import pyotp
 
-# Génération du secret (à l'inscription)
+# Secret generation (at registration)
 secret = pyotp.random_base32()
 totp_uri = pyotp.TOTP(secret).provisioning_uri(
     name="michel", issuer_name="COFRAP"
 )
 # totp_uri = "otpauth://totp/COFRAP:michel?secret=...&issuer=COFRAP"
 
-# Vérification du code (à la connexion)
+# Code verification (at login)
 totp = pyotp.TOTP(secret)
 is_valid = totp.verify(user_input, valid_window=1)
-# valid_window=1 tolère ±30 secondes de dérive horaire
+# valid_window=1 tolerates ±30 seconds of clock drift
 ```
 
-## Les limites du TOTP
+## Limitations of TOTP
 
 {: .warning }
-TOTP a trois faiblesses inhérentes qu'il faut connaître pour pouvoir les mitiger.
+TOTP has three inherent weaknesses that must be understood in order to mitigate them.
 
 ### 1. Phishable
 
-Un attaquant qui exploite un faux site COFRAP peut intercepter password + TOTP et les rejouer en temps réel sur le vrai site. TOTP ne sait pas distinguer un site légitime d'un site frauduleux.
+An attacker exploiting a fake COFRAP site can intercept the password + TOTP and replay them in real time on the real site. TOTP cannot tell a legitimate site apart from a fraudulent one.
 
-**Mitigation** : éducation utilisateur, vérification du domaine, futur passage à WebAuthn/Passkeys.
+**Mitigation**: user education, domain verification, future migration to WebAuthn/Passkeys.
 
-### 2. Shared secret côté serveur
+### 2. Shared secret on the server side
 
-Le secret 2FA est dans la base PostgreSQL. Si la base fuite (SQL injection, backup volé), tous les secrets pourraient être exposés.
+The 2FA secret lives in the PostgreSQL database. If the database leaks (SQL injection, stolen backup), all secrets could be exposed.
 
-**Mitigation** : le secret est **chiffré avec Fernet** avant stockage. Voir [Sécurité](security.html#chiffrement-du-secret-2fa).
+**Mitigation**: the secret is **encrypted with Fernet** before storage. See [Security](security.html#2fa-secret-encryption).
 
-### 3. Synchronisation horaire
+### 3. Clock synchronization
 
-Si l'horloge du téléphone dérive de plus de 60 secondes, les codes ne marchent plus.
+If the phone's clock drifts by more than 60 seconds, codes stop working.
 
-**Mitigation** : `valid_window=1` (tolère ±30s), et NTP côté serveur.
+**Mitigation**: `valid_window=1` (tolerates ±30s), plus NTP on the server side.
 
-## Comparaison avec d'autres méthodes 2FA
+## Comparison with other 2FA methods
 
-| Méthode | Sécurité | UX | Complexité | Phishable |
+| Method | Security | UX | Complexity | Phishable |
 |:--------|:---------|:---|:-----------|:----------|
-| SMS OTP | ❌ Faible | Moyen | Facile | Oui (+ SIM swap) |
-| Email OTP | Moyenne | Lent | Facile | Oui |
-| **TOTP (notre choix)** | **Bonne** | **Bon** | **Moyen** | **Oui** |
-| Push notifications | Bonne | Excellent | Élevée | Oui (fatigue attacks) |
-| WebAuthn / Passkeys | Excellente | Excellent | Élevée | **Non** |
+| SMS OTP | ❌ Weak | Average | Easy | Yes (+ SIM swap) |
+| Email OTP | Average | Slow | Easy | Yes |
+| **TOTP (our choice)** | **Good** | **Good** | **Medium** | **Yes** |
+| Push notifications | Good | Excellent | High | Yes (fatigue attacks) |
+| WebAuthn / Passkeys | Excellent | Excellent | High | **No** |
 
-WebAuthn est l'état de l'art en 2026 (utilisé par Google, GitHub, Microsoft) mais demande un investissement plus important. TOTP reste un choix solide pour une V1.
+WebAuthn is the state of the art in 2026 (used by Google, GitHub, Microsoft) but requires a bigger investment. TOTP remains a solid choice for a V1.

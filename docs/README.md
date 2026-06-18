@@ -1,57 +1,57 @@
-# Documentation COFRAP
+# COFRAP Documentation
 
-Documentation technique servie via **GitHub Pages** + **Swagger UI**.
+Technical documentation served via **GitHub Pages** + **Swagger UI**.
 
-## Comment l'activer
+## How to enable it
 
-1. Push le contenu de ce dossier sur la branche `main`
-2. Aller dans **Settings** → **Pages** sur GitHub
-3. Sous **Source**, sélectionner :
-   - **Branch** : `main`
-   - **Folder** : `/docs`
-4. Cliquer **Save**
+1. Push the contents of this folder to the `main` branch
+2. Go to **Settings** → **Pages** on GitHub
+3. Under **Source**, select:
+   - **Branch**: `main`
+   - **Folder**: `/docs`
+4. Click **Save**
 
-GitHub publiera la doc sur `https://<votre-user>.github.io/mspr-cofrap/` (jusqu'à 5 minutes pour le premier déploiement).
+GitHub will publish the docs at `https://<your-user>.github.io/mspr-cofrap/` (up to 5 minutes for the first deployment).
 
 ## Structure
 
 ```
 docs/
-├── _config.yml         # Configuration Jekyll (thème just-the-docs)
-├── Gemfile             # Dépendances Ruby (pour preview local optionnel)
-├── index.md            # Page d'accueil
-├── architecture.md     # Architecture technique
-├── 2fa.md              # TOTP en détail (RFC 6238)
-├── security.md         # Les 3 défenses enterprise-grade
-├── api.md              # Référence API (lien vers Swagger)
-├── api.html            # Swagger UI interactif (charge openapi.yaml)
-├── openapi.yaml        # Spec OpenAPI 3.0 des 4 endpoints
-└── deploy.md           # Guide de déploiement local
+├── _config.yml         # Jekyll configuration (just-the-docs theme)
+├── Gemfile             # Ruby dependencies (for optional local preview)
+├── index.md            # Home page
+├── architecture.md     # Technical architecture
+├── 2fa.md              # TOTP in detail (RFC 6238)
+├── security.md         # The 3 enterprise-grade defenses
+├── api.md              # API reference (link to Swagger)
+├── api.html            # Interactive Swagger UI (loads openapi.yaml)
+├── openapi.yaml         # OpenAPI 3.0 spec for the 4 endpoints
+└── deploy.md            # Local deployment guide
 ```
 
-## Preview en local (optionnel)
+## Local preview (optional)
 
-Pour prévisualiser la doc en local avant de push :
+To preview the docs locally before pushing:
 
 ```bash
 cd docs
-bundle install      # installe Jekyll et just-the-docs (Ruby requis)
+bundle install      # installs Jekyll and just-the-docs (requires Ruby)
 bundle exec jekyll serve
 
-# La doc est sur http://localhost:4000
+# The docs are available at http://localhost:4000
 ```
 
-Sinon, push direct et regarder le résultat sur GitHub Pages.
+Otherwise, just push and check the result on GitHub Pages.
 
-## Modifier la doc
+## Editing the docs
 
-- Tous les contenus sont en **Markdown** dans les fichiers `.md`
-- Le front matter `---` au début de chaque fichier définit titre, ordre dans la nav, etc.
-- La spec API est dans `openapi.yaml` : modifier ce fichier pour mettre à jour Swagger UI
-- Le thème `just-the-docs` ajoute automatiquement : sidebar de navigation, recherche full-text, dark mode, anchors sur les headings
+- All content is written in **Markdown** in the `.md` files
+- The `---` front matter at the top of each file sets the title, nav order, etc.
+- The API spec lives in `openapi.yaml`: edit this file to update Swagger UI
+- The `just-the-docs` theme automatically adds: a navigation sidebar, full-text search, dark mode, and heading anchors
 
-## Liens utiles
+## Useful links
 
-- [Documentation just-the-docs](https://just-the-docs.com/)
-- [Spécification OpenAPI 3.0](https://swagger.io/specification/)
+- [just-the-docs documentation](https://just-the-docs.com/)
+- [OpenAPI 3.0 specification](https://swagger.io/specification/)
 - [Swagger UI](https://swagger.io/tools/swagger-ui/)
